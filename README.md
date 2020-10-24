@@ -44,3 +44,12 @@ Authentication is based on Basic Auth, so with every request to a protected endp
    - Liquibase or Flyway for database change management and migration.
    - Prometheus and Grafana or ELK stack - for collecting and visualising application log data.
    - Hysterix - for configuring circuit breakers
+
+
+### PART 2
+The new rule has been implemented with assumptions that have not been explicitly clarified by the client:
+
+##### Assumptions:
+  - That the new rule will apply exclusively to an order quantity of 3
+  - That the new rule will be applied at a higher order of precedence over existing rules.
+  - That the new rule may override subsequent rules.
