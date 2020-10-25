@@ -47,7 +47,7 @@ Authentication is based on Basic Auth, so with every request to a protected endp
 
 
 ### PART 2
-The new rule has been implemented with assumptions that have not been explicitly clarified by the client:
+The new rule has been implemented based assumptions that have not been explicitly clarified by the client:
 
 ##### Assumptions:
   - That the new rule will apply exclusively to an order quantity of 3

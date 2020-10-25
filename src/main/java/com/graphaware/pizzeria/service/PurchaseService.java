@@ -9,11 +9,8 @@ import com.graphaware.pizzeria.repository.PurchaseRepository;
 import com.graphaware.pizzeria.security.PizzeriaUserPrincipal;
 
 import javax.transaction.Transactional;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class PurchaseService {
 
+    private static final int ORDER_QUANTITY_OF_THREE = 3;
     //cache for the ongoing order
     private final Map<PizzeriaUser, Purchase> ongoingPurchases = new HashMap<>();
 
@@ -114,6 +112,10 @@ public class PurchaseService {
         if (pizzas == null) {
             return 0.0;
         }
+
+        //buy 3 or more pizzas, get cheapest free
+        pizzas = discountOnPizzaQuantity(pizzas, ORDER_QUANTITY_OF_THREE);
+
         // buy a pineapple pizza, get 10% off the others
         boolean applyPineappleDiscount = false;
         for (Pizza pizza : pizzas) {
@@ -143,4 +145,15 @@ public class PurchaseService {
     private PizzeriaUser getCurrentUser() {
         return ((PizzeriaUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
     }
+
+    private List<Pizza> discountOnPizzaQuantity(List<Pizza> pizzas, int orderQuantity) {
+        if(pizzas.size() == orderQuantity){
+            return pizzas.stream()
+                    .sorted(Comparator.comparing(Pizza::getPrice))
+                    .skip(1)
+                    .collect(Collectors.toList());
+        }
+        return  pizzas;
+    }
+
 }

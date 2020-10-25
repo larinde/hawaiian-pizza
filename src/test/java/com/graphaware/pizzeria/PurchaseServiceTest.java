@@ -16,9 +16,9 @@ import com.graphaware.pizzeria.repository.PurchaseRepository;
 import com.graphaware.pizzeria.security.PizzeriaUserPrincipal;
 import com.graphaware.pizzeria.service.PizzeriaException;
 import com.graphaware.pizzeria.service.PurchaseService;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
+
+import java.util.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -143,4 +143,123 @@ public class PurchaseServiceTest {
         Purchase saved = purchaseCaptor.getValue();
         assertThat(saved.getState()).isEqualByComparingTo(PurchaseState.SERVED);
     }
+
+    @Test
+    void should_apply_10_percent_discount_on_orders_with_pineapple_toppings() {
+        List<Pizza> orderedPizza = new ArrayList<>();
+        orderedPizza.add(addPizza("pineapple", 10.00));
+        orderedPizza.add(addPizza("mozzarella", 20.00));
+
+        Double expectedDiscountedAmount = 28.0;
+
+        Purchase p = new Purchase();
+        p.setPizzas(orderedPizza);
+        p.setState(PurchaseState.ONGOING);
+
+        when(purchaseRepository.findFirstByStateEquals(any()))
+                .thenReturn(p);
+        when(purchaseRepository.findById(any()))
+                .thenReturn(Optional.of(p));
+        purchaseService.pickPurchase();
+
+        purchaseService.completePurchase(p.getId());
+
+        ArgumentCaptor<Purchase> purchaseCaptor = ArgumentCaptor.forClass(Purchase.class);
+        verify(purchaseRepository, times(2)).save(purchaseCaptor.capture());
+        Purchase saved = purchaseCaptor.getValue();
+        assertThat(saved.getState()).isEqualByComparingTo(PurchaseState.SERVED);
+        assertThat(saved.getAmount()).isEqualTo(expectedDiscountedAmount);
+    }
+
+    @Test
+    void should_apply_100_percent_discount_on_the_cheapest_of_3_ordered_pizzas() {
+        List<Pizza> orderedPizza = new ArrayList<>();
+        orderedPizza.add(addPizza("margherita", 10.00));
+        orderedPizza.add(addPizza("mozzarella", 20.00));
+        orderedPizza.add(addPizza("pepperoni", 30.00));
+
+        Double expectedDiscountedAmount = 50.0;
+
+        Purchase p = new Purchase();
+        p.setPizzas(orderedPizza);
+        p.setState(PurchaseState.ONGOING);
+
+        when(purchaseRepository.findFirstByStateEquals(any()))
+                .thenReturn(p);
+        when(purchaseRepository.findById(any()))
+                .thenReturn(Optional.of(p));
+        purchaseService.pickPurchase();
+
+        purchaseService.completePurchase(p.getId());
+
+        ArgumentCaptor<Purchase> purchaseCaptor = ArgumentCaptor.forClass(Purchase.class);
+        verify(purchaseRepository, times(2)).save(purchaseCaptor.capture());
+        Purchase saved = purchaseCaptor.getValue();
+        assertThat(saved.getState()).isEqualByComparingTo(PurchaseState.SERVED);
+        assertThat(saved.getAmount()).isEqualTo(expectedDiscountedAmount);
+    }
+    @Test
+    void should_apply_100_percent_discount_on_the_cheapest_of_3_ordered_pizzas_and_override_previous_rule() {
+        List<Pizza> orderedPizza = new ArrayList<>();
+        orderedPizza.add(addPizza("pineapple", 10.00));
+        orderedPizza.add(addPizza("mozzarella", 25.35));
+        orderedPizza.add(addPizza("pepperoni", 30.35));
+
+        Double expectedDiscountedAmount = 55.70;
+
+        Purchase p = new Purchase();
+        p.setPizzas(orderedPizza);
+        p.setState(PurchaseState.ONGOING);
+
+        when(purchaseRepository.findFirstByStateEquals(any()))
+                .thenReturn(p);
+        when(purchaseRepository.findById(any()))
+                .thenReturn(Optional.of(p));
+        purchaseService.pickPurchase();
+
+        purchaseService.completePurchase(p.getId());
+
+        ArgumentCaptor<Purchase> purchaseCaptor = ArgumentCaptor.forClass(Purchase.class);
+        verify(purchaseRepository, times(2)).save(purchaseCaptor.capture());
+        Purchase saved = purchaseCaptor.getValue();
+        assertThat(saved.getState()).isEqualByComparingTo(PurchaseState.SERVED);
+        assertThat(saved.getAmount()).isEqualTo(expectedDiscountedAmount);
+    }
+
+    @Test
+    void should_apply_no_free_discount_on_orders_greater_than_3() {
+        List<Pizza> orderedPizza = new ArrayList<>();
+        orderedPizza.add(addPizza("mozzarella", 20.00));
+        orderedPizza.add(addPizza("mozzarella", 20.00));
+        orderedPizza.add(addPizza("mozzarella", 20.00));
+        orderedPizza.add(addPizza("mozzarella", 20.00));
+
+        Double expectedDiscountedAmount = 80.00;
+
+        Purchase p = new Purchase();
+        p.setPizzas(orderedPizza);
+        p.setState(PurchaseState.ONGOING);
+
+        when(purchaseRepository.findFirstByStateEquals(any()))
+                .thenReturn(p);
+        when(purchaseRepository.findById(any()))
+                .thenReturn(Optional.of(p));
+        purchaseService.pickPurchase();
+
+        purchaseService.completePurchase(p.getId());
+
+        ArgumentCaptor<Purchase> purchaseCaptor = ArgumentCaptor.forClass(Purchase.class);
+        verify(purchaseRepository, times(2)).save(purchaseCaptor.capture());
+        Purchase saved = purchaseCaptor.getValue();
+        assertThat(saved.getState()).isEqualByComparingTo(PurchaseState.SERVED);
+        assertThat(saved.getAmount()).isEqualTo(expectedDiscountedAmount);
+    }
+
+    private Pizza addPizza(String topping, Double price){
+        Pizza pizza = new Pizza();
+        pizza.setToppings(Arrays.asList(topping));
+        pizza.setPrice(price);
+        return pizza;
+    }
+
 }
